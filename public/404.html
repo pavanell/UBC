@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ultimate Baking Championships</title>
+    <script>
+      const repo = 'UBC';
+      const path = window.location.pathname.replace(new RegExp(`^/${repo}/`), '');
+      sessionStorage.setItem('spa-redirect', path + window.location.search + window.location.hash);
+      window.location.replace(`/${repo}/`);
+    </script>
+  </head>
+  <body></body>
+</html>

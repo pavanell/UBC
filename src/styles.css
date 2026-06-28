@@ -1,0 +1,197 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #3d2914;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #2b2118;
+  touch-action: manipulation;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+#game-container {
+  width: min(100vw, calc(100dvh * 390 / 780));
+  aspect-ratio: 390 / 780;
+  max-height: 100dvh;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border: 3px solid #8b6914;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#ui-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  padding: 1rem;
+}
+
+#ui-overlay .panel {
+  pointer-events: auto;
+  background: #fff8dc;
+  border: 3px solid #8b6914;
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 360px;
+  width: 100%;
+  max-height: 85dvh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+#ui-overlay .center-panel {
+  text-align: center;
+}
+
+.panel-scroll {
+  max-height: 80dvh;
+}
+
+.panel h1,
+.panel h2 {
+  margin-top: 0;
+  color: #6b4226;
+}
+
+.panel label {
+  display: block;
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.panel input,
+.panel select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #c4956a;
+  border-radius: 6px;
+}
+
+.speech-bubble {
+  background: #fff;
+  border: 2px solid #8b6914;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.btn {
+  display: inline-block;
+  margin: 0.35rem 0.25rem 0.35rem 0;
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #8b6914;
+  border-radius: 8px;
+  background: #e8d5b7;
+  color: #2b2118;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.btn-primary {
+  background: #c45c26;
+  color: #fff8dc;
+  border-color: #6b4226;
+}
+
+.btn-row {
+  margin-top: 1rem;
+}
+
+.btn-small {
+  padding: 0.35rem 0.6rem;
+  min-height: 36px;
+  font-size: 0.85rem;
+}
+
+.ingredient-list {
+  margin: 0.75rem 0;
+}
+
+.ingredient-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #e0c9a6;
+  font-size: 0.85rem;
+}
+
+.minigame-area {
+  height: 160px;
+  background: #e8d5b7;
+  border: 2px dashed #8b6914;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  margin: 0.75rem 0;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #6b4226;
+}
+
+.recipe-entry {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e0c9a6;
+}
+
+.dish-hud {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 248, 220, 0.95);
+  border: 2px solid #8b6914;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  z-index: 50;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.9rem;
+  max-width: 95vw;
+}
+
+@media (min-width: 768px) {
+  #game-container {
+    width: min(390px, calc(100dvh * 390 / 780));
+  }
+}
