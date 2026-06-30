@@ -17,6 +17,8 @@ export function generateProceduralAppearance(
   return {
     plateShape: PLATES[seed % PLATES.length],
     baseShape: hasChocolate ? 'brownie' : BASES[seed % BASES.length],
+    bakeStage: 'raw',
+    panShape: 'round',
     frosting: FROSTINGS[(seed >> 2) % FROSTINGS.length],
     topping: hasFruit ? 'berries' : seed % 2 === 0 ? 'crumbs' : 'drizzle',
     color: hasChocolate ? '#5c3317' : COLORS[seed % COLORS.length],

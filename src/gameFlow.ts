@@ -17,12 +17,16 @@ import { combinedScoreExplanation, scoreDish } from './systems/judging';
 import { createBowl, createEmptyDish, filterDishName, generateProceduralAppearance } from './systems/proceduralDish';
 import { matchRecipe } from './systems/recipeMatching';
 import { getRatingDisplay, recordDiscovery, updateRating } from './systems/rating';
-import type { ChampionshipState, Contestant, Dish, DishBowl, DiscoveredRecipeEntry, GameMode, KitchenStation } from './types';
-import { showIngredientPicker, showMiniGamePanel } from './ui/ingredientPanel';
+import type { ChampionshipState, Contestant, Dish, DishBowl, DiscoveredRecipeEntry, FoodState, GameMode, KitchenStation } from './types';
+import { showIngredientPicker } from './ui/ingredientPanel';
 import { button, hideOverlay, showOverlay, speechBubble, buildCharacterCreationForm, readCharacterCreationForm } from './ui/overlay';
 
 let game: Phaser.Game | null = null;
 let currentDish: Dish = createEmptyDish();
+
+const PANTRY_CATEGORIES = ['flour', 'sugar', 'chocolate', 'nut', 'spice', 'extract', 'leavener', 'starch', 'grain', 'decoration', 'other'];
+const FRIDGE_CATEGORIES = ['dairy', 'egg', 'fruit', 'vegetable', 'filling', 'cheese', 'savory'];
+const FREEZER_CATEGORIES = ['fruit', 'dairy', 'filling'];
 
 function initPhaser(): Phaser.Game {
   if (game) return game;
@@ -245,7 +249,7 @@ function startKitchen(freeCook: boolean): void {
   bindGlobalEvents();
   if (!sessionStore.hasSeenTutorial('kitchen')) {
     showOverlay(`
-      ${speechBubble('Tip', 'Tap to walk. Tap stations to interact. Use pantry for ingredients.')}
+      ${speechBubble('Tip', 'Move around the kitchen. Stand near a station and press Space or Enter to use it.')}
       ${button('tut-ok', 'Got it', true)}
     `, 'panel');
     document.getElementById('tut-ok')!.onclick = () => {
@@ -313,8 +317,67 @@ function updateDishHudCounts(): void {
   if (bowlCount) bowlCount.textContent = `${activeBowl.ingredients.length} in ${activeBowl.name}`;
 }
 
-function renderDishPreview(dish: Dish): string {
+function ingredientName(id: string): string {
+  return getIngredientById(id)?.name ?? id;
+}
+
+function ingredientVisualClass(id: string): string {
+  const category = getIngredientById(id)?.category ?? 'other';
+  return `ingredient-token ingredient-${category}`;
+}
+
+function renderIngredientTokens(bowl: DishBowl): string {
+  return bowl.ingredients
+    .slice(0, 12)
+    .map((item, index) => `<span class="${ingredientVisualClass(item.ingredientId)}" title="${ingredientName(item.ingredientId)}" style="--i:${index}"></span>`)
+    .join('');
+}
+
+function renderBowlList(bowls = currentDish.bowls): string {
+  return bowls.map((bowl) => {
+    const isActive = bowl.id === currentDish.activeBowlId ? ' active' : '';
+    const ingredients = bowl.ingredients.length
+      ? bowl.ingredients.map((item) => `<li>${item.amount} ${item.unit} ${ingredientName(item.ingredientId)}</li>`).join('')
+      : '<li>Empty</li>';
+    return `
+      <section class="bowl-card${isActive}" data-bowl-id="${bowl.id}">
+        <div class="bowl-visual">${renderIngredientTokens(bowl)}</div>
+        <div>
+          <strong>${bowl.name}</strong>
+          <ul>${ingredients}</ul>
+        </div>
+      </section>
+    `;
+  }).join('');
+}
+
+function showBowlsPanel(): void {
+  showOverlay(`
+    <h2>Bowl Station</h2>
+    <div class="bowl-grid">${renderBowlList()}</div>
+    ${button('bowls-new', '+ Bowl')}
+    ${button('bowls-close', 'Close', true)}
+  `, 'panel panel-scroll');
+  document.querySelectorAll<HTMLElement>('.bowl-card[data-bowl-id]').forEach((card) => {
+    card.addEventListener('click', () => {
+      currentDish.activeBowlId = card.dataset.bowlId ?? currentDish.activeBowlId;
+      showDishHud(sessionStore.getState().freeCookActive);
+      showBowlsPanel();
+    });
+  });
+  document.getElementById('bowls-new')!.onclick = () => {
+    const bowl = createBowl(currentDish.bowls.length + 1);
+    currentDish.bowls.push(bowl);
+    currentDish.activeBowlId = bowl.id;
+    showDishHud(sessionStore.getState().freeCookActive);
+    showBowlsPanel();
+  };
+  document.getElementById('bowls-close')!.onclick = hideOverlay;
+}
+
+function renderDishPreview(dish: Dish, context: 'plate' | 'pan' = 'plate'): string {
   const appearance = dish.appearance;
+  const stage = appearance.bakeStage ?? 'raw';
   const layers = Array.from({ length: Math.max(1, appearance.layers) })
     .map((_, index) => `<span class="dish-layer" style="background:${appearance.color}; transform: translateY(${index * -4}px)"></span>`)
     .join('');
@@ -323,9 +386,12 @@ function renderDishPreview(dish: Dish): string {
     : '';
   const topping = appearance.topping ? `<span class="dish-topping">${appearance.topping}</span>` : '';
   const garnish = appearance.garnish ? `<span class="dish-garnish">${appearance.garnish}</span>` : '';
+  const vesselClass = context === 'pan'
+    ? `dish-pan dish-pan-${appearance.panShape ?? 'round'}`
+    : `dish-plate dish-plate-${appearance.plateShape}`;
   return `
-    <div class="dish-preview" aria-label="${dish.name} preview">
-      <div class="dish-plate dish-plate-${appearance.plateShape}">
+    <div class="dish-preview dish-stage-${stage}" aria-label="${dish.name} preview">
+      <div class="${vesselClass}">
         <div class="dish-base dish-base-${appearance.baseShape}">
           ${layers}
           ${frosting}
@@ -338,9 +404,304 @@ function renderDishPreview(dish: Dish): string {
   `;
 }
 
+function showMixerPanel(station: KitchenStation): void {
+  const selected = new Set<string>();
+  const render = () => {
+    showOverlay(`
+      <h2>${station.label}</h2>
+      <div class="mixer-layout">
+        <div id="mixer-drop" class="mixer-drop">
+          <div class="mixer-machine"></div>
+          <strong>Mixer</strong>
+          <span>Drag bowls here</span>
+        </div>
+        <div class="mixer-bowls">${currentDish.bowls.map((bowl) => `
+          <button type="button" class="bowl-card mixer-bowl${selected.has(bowl.id) ? ' selected' : ''}" draggable="true" data-bowl-id="${bowl.id}">
+            <div class="bowl-visual">${renderIngredientTokens(bowl)}</div>
+            <strong>${bowl.name}</strong>
+            <small>${bowl.ingredients.map((item) => ingredientName(item.ingredientId)).join(', ') || 'Empty'}</small>
+          </button>
+        `).join('')}</div>
+      </div>
+      ${button('mixer-run', 'Turn on Mixer', true)}
+      ${button('mixer-close', 'Close')}
+    `, 'panel panel-scroll');
+    bindMixerPanel(station, selected, render);
+  };
+  render();
+}
+
+function showOvenPanel(): void {
+  const sourceBowls = currentDish.bowls.filter((bowl) => bowl.ingredients.length > 0);
+  const selectedId = getActiveBowl().ingredients.length ? getActiveBowl().id : sourceBowls[0]?.id;
+  let bowlId = selectedId ?? '';
+  const render = () => {
+    const bowl = currentDish.bowls.find((item) => item.id === bowlId);
+    showOverlay(`
+      <h2>Oven</h2>
+      <label>Fill pan from bowl
+        <select id="oven-bowl">
+          ${sourceBowls.map((item) => `<option value="${item.id}" ${item.id === bowlId ? 'selected' : ''}>${item.name}</option>`).join('')}
+        </select>
+      </label>
+      <div class="oven-layout">
+        <div class="oven-box"><div class="oven-rack">${bowl ? renderDishPreview(currentDish, 'pan') : ''}</div></div>
+        <div class="bowl-card">${bowl ? `<div class="bowl-visual">${renderIngredientTokens(bowl)}</div><div><strong>${bowl.name}</strong><small>${bowl.ingredients.map((item) => ingredientName(item.ingredientId)).join(', ')}</small></div>` : '<strong>No filled bowls</strong>'}</div>
+      </div>
+      <label>Temp (F) <input id="oven-temp" type="number" value="350" /></label>
+      <label>Time (min) <input id="oven-time" type="number" value="25" /></label>
+      ${button('oven-bake', 'Put Pan in Oven', true)}
+      ${button('oven-close', 'Close')}
+    `, 'panel panel-scroll');
+    document.getElementById('oven-bowl')?.addEventListener('change', (event) => {
+      bowlId = (event.target as HTMLSelectElement).value;
+      render();
+    });
+    document.getElementById('oven-close')!.onclick = hideOverlay;
+    document.getElementById('oven-bake')!.onclick = () => {
+      const bowl = currentDish.bowls.find((item) => item.id === bowlId);
+      if (!bowl) {
+        alert('Choose a bowl with ingredients.');
+        return;
+      }
+      currentDish.activeBowlId = bowl.id;
+      const stats = {
+        durationMs: 2500,
+        temperatureF: parseFloat((document.getElementById('oven-temp') as HTMLInputElement).value),
+        targetTempF: 350,
+        bakeMinutes: parseFloat((document.getElementById('oven-time') as HTMLInputElement).value),
+        targetMinutes: 25,
+      };
+      completeStationAction({ id: 'oven', type: 'oven', label: 'Oven', x: 0, y: 0, width: 0, height: 0, interactable: true }, stats);
+    };
+  };
+  render();
+}
+
+function bindMixerPanel(station: KitchenStation, selected: Set<string>, render: () => void): void {
+  document.querySelectorAll<HTMLElement>('.mixer-bowl').forEach((card) => {
+    card.addEventListener('dragstart', (event) => {
+      event.dataTransfer?.setData('text/plain', card.dataset.bowlId ?? '');
+    });
+    card.addEventListener('click', () => {
+      const id = card.dataset.bowlId;
+      if (!id) return;
+      if (selected.has(id)) selected.delete(id);
+      else selected.add(id);
+      render();
+    });
+  });
+  const drop = document.getElementById('mixer-drop')!;
+  drop.addEventListener('dragover', (event) => event.preventDefault());
+  drop.addEventListener('drop', (event) => {
+    event.preventDefault();
+    const id = event.dataTransfer?.getData('text/plain');
+    if (id) selected.add(id);
+    render();
+  });
+  document.getElementById('mixer-close')!.onclick = hideOverlay;
+  document.getElementById('mixer-run')!.onclick = () => runMixer(station, selected);
+}
+
+function runMixer(station: KitchenStation, selected: Set<string>): void {
+  const bowlsToMix = currentDish.bowls.filter((bowl) => selected.has(bowl.id) && bowl.ingredients.length > 0);
+  if (!bowlsToMix.length) {
+    alert('Choose at least one bowl with ingredients.');
+    return;
+  }
+  const mixedIngredients = bowlsToMix.flatMap((bowl) => bowl.ingredients);
+  const mixedStates = bowlsToMix.flatMap((bowl) => bowl.states);
+  const result = evaluateStation(station.type, {
+    durationMs: 4500,
+    taps: bowlsToMix.length * 8,
+    dragDistance: bowlsToMix.length * 120,
+    circularMotion: bowlsToMix.length * 180,
+    verticalMotion: bowlsToMix.length * 80,
+  });
+  const newBowl = createBowl(currentDish.bowls.length + 1);
+  newBowl.name = `${station.label} Bowl`;
+  newBowl.ingredients = mixedIngredients;
+  newBowl.techniques = [...new Set([...bowlsToMix.flatMap((bowl) => bowl.techniques), result.technique])];
+  newBowl.states = mergeFoodStates(mixedStates, result.states);
+  currentDish.bowls = [...currentDish.bowls.filter((bowl) => !selected.has(bowl.id)), newBowl];
+  currentDish.activeBowlId = newBowl.id;
+  currentDish.techniques.push(result.technique);
+  currentDish.states = mergeFoodStates(currentDish.states, result.states);
+  showDishHud(sessionStore.getState().freeCookActive);
+  showOverlay(`
+    <h2>Mixed Bowl</h2>
+    <div class="bowl-grid">${renderBowlList([newBowl])}</div>
+    ${speechBubble('Result', `${result.message} The selected bowls were combined into ${newBowl.name}.`)}
+    ${button('mixer-ok', 'OK', true)}
+  `, 'panel panel-scroll');
+  document.getElementById('mixer-ok')!.onclick = hideOverlay;
+}
+
+function showDecorationPanel(): void {
+  let actions = 0;
+  const start = Date.now();
+  const render = () => {
+    showOverlay(`
+      <h2>Decorate</h2>
+      ${renderDishPreview(currentDish)}
+      <div class="decor-tools">
+        ${button('decor-frost', 'Frosting')}
+        ${button('decor-drizzle', 'Drizzle')}
+        ${button('decor-sprinkle', 'Sprinkles')}
+      </div>
+      ${button('decor-done', 'Finish', true)}
+      ${button('decor-close', 'Close')}
+    `, 'panel center-panel');
+    document.getElementById('decor-frost')!.onclick = () => {
+      currentDish.appearance.frosting = 'buttercream';
+      actions++;
+      render();
+    };
+    document.getElementById('decor-drizzle')!.onclick = () => {
+      currentDish.appearance.topping = 'drizzle';
+      actions++;
+      render();
+    };
+    document.getElementById('decor-sprinkle')!.onclick = () => {
+      currentDish.appearance.topping = 'sprinkles';
+      currentDish.appearance.garnish = 'sparkle';
+      actions++;
+      render();
+    };
+    document.getElementById('decor-close')!.onclick = hideOverlay;
+    document.getElementById('decor-done')!.onclick = () => {
+      const result = evaluateStation('decorating', {
+        durationMs: Date.now() - start,
+        taps: actions * 5,
+        dragDistance: actions * 140,
+      });
+      currentDish.techniques.push(result.technique);
+      currentDish.states = mergeFoodStates(currentDish.states, result.states);
+      hideOverlay();
+      showOverlay(`${renderDishPreview(currentDish)}${speechBubble('Result', result.message)}${button('decor-ok', 'OK', true)}`, 'panel center-panel');
+      document.getElementById('decor-ok')!.onclick = hideOverlay;
+    };
+  };
+  render();
+}
+
+function getIngredientCategories(dish: Dish): Record<string, number> {
+  return dish.ingredients.reduce<Record<string, number>>((counts, item) => {
+    const category = getIngredientById(item.ingredientId)?.category ?? 'other';
+    counts[category] = (counts[category] ?? 0) + item.amount;
+    return counts;
+  }, {});
+}
+
+function getBakingOutcomeStates(dish: Dish): { states: FoodState[]; messages: string[] } {
+  const counts = getIngredientCategories(dish);
+  const flour = counts.flour ?? 0;
+  const dairy = counts.dairy ?? 0;
+  const fruit = (counts.fruit ?? 0) + (counts.vegetable ?? 0);
+  const fat = counts.fat ?? 0;
+  const sugar = counts.sugar ?? 0;
+  const leavener = counts.leavener ?? 0;
+  const wet = dairy + fruit + (counts.other ?? 0);
+  const states: FoodState[] = [];
+  const messages: string[] = [];
+
+  if (flour > 0 && leavener === 0) {
+    states.push('dense', 'collapsed');
+    messages.push('No leavener, so the bake did not rise much.');
+  }
+  if (flour > 0 && wet > flour * 2.2) {
+    states.push('too_wet', 'soggy');
+    messages.push('The mix was too wet for the flour.');
+  }
+  if (flour > 0 && wet < flour * 0.35 && fat < flour * 0.25) {
+    states.push('dry');
+    messages.push('The mix was too dry.');
+  }
+  if (flour > 0 && sugar > flour * 1.8) {
+    states.push('too_sweet', 'collapsed');
+    messages.push('The high sugar ratio weakened the structure.');
+  }
+  return { states, messages };
+}
+
+function completeStationAction(
+  station: KitchenStation,
+  stats: {
+    durationMs: number;
+    taps?: number;
+    dragDistance?: number;
+    circularMotion?: number;
+    verticalMotion?: number;
+    temperatureF?: number;
+    targetTempF?: number;
+    bakeMinutes?: number;
+    targetMinutes?: number;
+  },
+): void {
+  const result = evaluateStation(station.type, stats);
+  const activeBowl = getActiveBowl();
+  currentDish.techniques.push(result.technique);
+  activeBowl.techniques.push(result.technique);
+  currentDish.states = mergeFoodStates(currentDish.states, result.states);
+  activeBowl.states = mergeFoodStates(activeBowl.states, result.states);
+  if (station.type === 'oven') {
+    currentDish.ovenTempF = stats.temperatureF;
+    currentDish.bakeTimeMinutes = stats.bakeMinutes;
+    const outcome = getBakingOutcomeStates(currentDish);
+    currentDish.states = mergeFoodStates(currentDish.states, outcome.states);
+    activeBowl.states = mergeFoodStates(activeBowl.states, outcome.states);
+    currentDish.appearance.bakeStage = currentDish.states.includes('burned') || (stats.bakeMinutes ?? 0) > 40 || (stats.temperatureF ?? 350) > 425
+      ? 'burned'
+      : 'baked';
+    currentDish.appearance.panShape = currentDish.appearance.baseShape === 'bread' ? 'loaf' : currentDish.appearance.baseShape === 'cookie' ? 'sheet' : 'round';
+    if ((stats.bakeMinutes ?? 0) > 45 || (stats.temperatureF ?? 350) > 450) {
+      currentDish.states = mergeFoodStates(currentDish.states, ['burned']);
+      activeBowl.states = mergeFoodStates(activeBowl.states, ['burned']);
+      currentDish.appearance.bakeStage = 'burned';
+    }
+    if (outcome.messages.length) result.message = `${result.message} ${outcome.messages.join(' ')}`;
+  }
+  hideOverlay();
+  const preview = station.type === 'plating' || station.type === 'oven'
+    ? renderDishPreview(currentDish, station.type === 'oven' ? 'pan' : 'plate')
+    : '';
+  showOverlay(`${preview}${speechBubble('Result', result.message)}${button('res-ok', 'OK', true)}`, preview ? 'panel center-panel' : 'panel');
+  document.getElementById('res-ok')!.onclick = hideOverlay;
+}
+
+function showSimpleStationPanel(station: KitchenStation): void {
+  const activeBowl = getActiveBowl();
+  showOverlay(`
+    <h2>${station.label}</h2>
+    <div class="station-action-visual station-action-${station.type}">
+      <div class="bowl-visual">${renderIngredientTokens(activeBowl)}</div>
+      <strong>${station.label}</strong>
+    </div>
+    ${speechBubble('Station', `${station.label} will work on ${activeBowl.name}.`)}
+    ${button('station-go', `Use ${station.label}`, true)}
+    ${button('station-close', 'Close')}
+  `, 'panel center-panel');
+  document.getElementById('station-close')!.onclick = hideOverlay;
+  document.getElementById('station-go')!.onclick = () => {
+    completeStationAction(station, {
+      durationMs: 3000,
+      taps: 8,
+      dragDistance: 160,
+      circularMotion: 140,
+      verticalMotion: 90,
+    });
+  };
+}
+
 function handleStation(station: KitchenStation): void {
   if (station.type === 'pantry' || station.type === 'refrigerator' || station.type === 'freezer') {
     const profile = sessionStore.getProfile();
+    const allowed =
+      station.type === 'pantry'
+        ? PANTRY_CATEGORIES
+        : station.type === 'refrigerator'
+          ? FRIDGE_CATEGORIES
+          : FREEZER_CATEGORIES;
     showIngredientPicker(
       (item) => {
         const activeBowl = getActiveBowl();
@@ -352,6 +713,8 @@ function handleStation(station: KitchenStation): void {
       },
       profile.recentIngredientIds,
       profile.favoriteIngredientIds,
+      allowed,
+      station.type === 'pantry' ? 'Dry Pantry' : station.type === 'refrigerator' ? 'Refrigerator' : 'Freezer',
     );
     return;
   }
@@ -359,6 +722,11 @@ function handleStation(station: KitchenStation): void {
   if (station.type === 'trash') {
     currentDish = createEmptyDish('New Dish');
     showDishHud(sessionStore.getState().freeCookActive);
+    return;
+  }
+
+  if (station.type === 'prep_counter') {
+    showBowlsPanel();
     return;
   }
 
@@ -370,7 +738,13 @@ function handleStation(station: KitchenStation): void {
   if (station.type === 'plating') {
     const name = prompt('Name your dish:', currentDish.name) ?? currentDish.name;
     currentDish.name = filterDishName(name);
-    currentDish.appearance = generateProceduralAppearance(currentDish.ingredients, currentDish.name);
+    const bakedStage = currentDish.appearance.bakeStage;
+    const panShape = currentDish.appearance.panShape;
+    currentDish.appearance = {
+      ...generateProceduralAppearance(currentDish.ingredients, currentDish.name),
+      bakeStage: bakedStage ?? currentDish.appearance.bakeStage,
+      panShape: panShape ?? currentDish.appearance.panShape,
+    };
     showDishHud(sessionStore.getState().freeCookActive);
     showOverlay(`
       <h2>Plated Bake</h2>
@@ -381,34 +755,22 @@ function handleStation(station: KitchenStation): void {
     return;
   }
 
-  const mode =
-    station.type === 'oven' ? 'oven' : station.type === 'measuring' ? 'measure' : 'mix';
-  showMiniGamePanel(
-    station.label,
-    `Perform the ${station.label.toLowerCase()} action.`,
-    (stats) => {
-      const result = evaluateStation(station.type, stats);
-      const activeBowl = getActiveBowl();
-      currentDish.techniques.push(result.technique);
-      activeBowl.techniques.push(result.technique);
-      currentDish.states = mergeFoodStates(currentDish.states, result.states);
-      activeBowl.states = mergeFoodStates(activeBowl.states, result.states);
-      if (station.type === 'oven') {
-        currentDish.ovenTempF = stats.temperatureF;
-        currentDish.bakeTimeMinutes = stats.bakeMinutes;
-      }
-      if (station.type === 'decorating') {
-        currentDish.appearance = generateProceduralAppearance(currentDish.ingredients, currentDish.name);
-      }
-      hideOverlay();
-      const preview = station.type === 'decorating' || station.type === 'plating' || station.type === 'oven'
-        ? renderDishPreview(currentDish)
-        : '';
-      showOverlay(`${preview}${speechBubble('Result', result.message)}${button('res-ok', 'OK', true)}`, preview ? 'panel center-panel' : 'panel');
-      document.getElementById('res-ok')!.onclick = hideOverlay;
-    },
-    { mode },
-  );
+  if (station.type === 'electric_mixer') {
+    showMixerPanel(station);
+    return;
+  }
+
+  if (station.type === 'decorating') {
+    showDecorationPanel();
+    return;
+  }
+
+  if (station.type === 'oven') {
+    showOvenPanel();
+    return;
+  }
+
+  showSimpleStationPanel(station);
 }
 
 function submitPlayerDish(): void {

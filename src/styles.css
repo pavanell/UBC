@@ -251,11 +251,306 @@ body {
   margin: 0.25rem auto 0.9rem;
 }
 
-.dish-plate {
+.bowl-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.bowl-card {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.65rem;
+  text-align: left;
+  background: #fffdf7;
+  border: 1px solid #c69a6c;
+  border-radius: 8px;
+  color: #2b2118;
+}
+
+.bowl-card.active,
+.bowl-card.selected {
+  border-color: #b94f2b;
+  box-shadow: 0 0 0 2px rgba(185, 79, 43, 0.18);
+}
+
+.bowl-card ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+}
+
+.bowl-card small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #6b4226;
+  line-height: 1.25;
+}
+
+.bowl-visual {
+  position: relative;
+  width: 3rem;
+  height: 2.4rem;
+  overflow: visible;
+  border: 2px solid #7f6040;
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+  background: #f6ead7;
+}
+
+.bowl-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0.15rem 0.2rem auto;
+  height: 0.4rem;
+  border-radius: 999px;
+  border-top: 2px solid #9f7246;
+}
+
+.ingredient-token {
+  position: absolute;
+  left: 0.35rem;
+  bottom: 0.25rem;
+  width: 0.55rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  border: 1px solid rgba(55, 37, 27, 0.32);
+  background: #d8b06a;
+}
+
+.ingredient-token:nth-child(2) {
+  left: 0.9rem;
+  bottom: 0.35rem;
+}
+
+.ingredient-token:nth-child(3) {
+  left: 1.45rem;
+  bottom: 0.28rem;
+}
+
+.ingredient-token:nth-child(4) {
+  left: 2rem;
+  bottom: 0.4rem;
+}
+
+.ingredient-token:nth-child(5) {
+  left: 0.55rem;
+  bottom: 0.75rem;
+}
+
+.ingredient-token:nth-child(6) {
+  left: 1.1rem;
+  bottom: 0.85rem;
+}
+
+.ingredient-token:nth-child(7) {
+  left: 1.65rem;
+  bottom: 0.78rem;
+}
+
+.ingredient-token:nth-child(8) {
+  left: 0.85rem;
+  bottom: 1.15rem;
+}
+
+.ingredient-token:nth-child(9) {
+  left: 1.4rem;
+  bottom: 1.2rem;
+}
+
+.ingredient-token:nth-child(n + 10) {
+  left: 1.95rem;
+  bottom: 1.05rem;
+}
+
+.ingredient-flour,
+.ingredient-starch,
+.ingredient-grain {
+  background: #f2e3c4;
+}
+
+.ingredient-sugar {
+  background: #fff7f1;
+}
+
+.ingredient-fat {
+  background: #ffd55f;
+  border-radius: 3px;
+}
+
+.ingredient-dairy,
+.ingredient-egg {
+  background: #fff3bf;
+}
+
+.ingredient-chocolate {
+  background: #5c3317;
+}
+
+.ingredient-fruit,
+.ingredient-vegetable {
+  background: #d94b4b;
+}
+
+.ingredient-nut {
+  background: #9f7246;
+}
+
+.ingredient-spice,
+.ingredient-extract {
+  background: #b94f2b;
+}
+
+.ingredient-leavener {
+  background: #dce6ef;
+}
+
+.ingredient-filling,
+.ingredient-decoration {
+  background: #d6849b;
+}
+
+.ingredient-cheese {
+  background: #f4c542;
+}
+
+.ingredient-savory {
+  background: #4e8d55;
+}
+
+.ingredient-other {
+  background: #8fc7e8;
+}
+
+.mixer-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  margin: 0.75rem 0;
+}
+
+.mixer-drop {
+  min-height: 14rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border: 2px dashed #936536;
+  border-radius: 8px;
+  background: #fff8ea;
+  text-align: center;
+}
+
+.mixer-machine {
+  width: 4.5rem;
+  height: 5rem;
+  border-radius: 1.2rem 1.2rem 0.55rem 0.55rem;
+  background:
+    radial-gradient(circle at 50% 78%, #514235 0 0.95rem, transparent 1rem),
+    linear-gradient(180deg, #d55f3a 0 34%, #f2c9a5 35% 62%, #91633c 63%);
+  box-shadow: inset 0 -0.35rem 0 rgba(0, 0, 0, 0.14);
+}
+
+.mixer-bowls {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mixer-bowl {
+  cursor: grab;
+}
+
+.decor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+
+.oven-layout {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.oven-box {
+  min-height: 9rem;
+  display: grid;
+  place-items: center;
+  padding: 0.8rem;
+  border: 0.45rem solid #4d565d;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at center, rgba(255, 126, 61, 0.16), transparent 50%),
+    #1f2529;
+}
+
+.oven-rack {
+  width: 100%;
+  min-height: 7rem;
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(0deg, transparent 0 1rem, rgba(220, 230, 239, 0.24) 1rem 1.15rem);
+}
+
+.station-action-visual {
+  width: min(12rem, 70vw);
+  min-height: 8rem;
+  display: grid;
+  place-items: center;
+  gap: 0.45rem;
+  margin: 0.5rem auto 0.85rem;
+  padding: 0.9rem;
+  border: 2px solid #936536;
+  border-radius: 8px;
+  background: #fff8ea;
+}
+
+.station-action-sink {
+  background: linear-gradient(180deg, #eaf8ff, #a9d8e8);
+}
+
+.station-action-measuring {
+  background: linear-gradient(180deg, #fffdf7, #f4d789);
+}
+
+.station-action-cutting {
+  background: linear-gradient(180deg, #e8f1df, #b9c99a);
+}
+
+.station-action-blender,
+.station-action-food_processor {
+  background: linear-gradient(180deg, #dcefff, #8fc7e8);
+}
+
+.station-action-stove,
+.station-action-microwave {
+  background: linear-gradient(180deg, #dce6ef, #5f6870);
+}
+
+.station-action-proofing {
+  background: linear-gradient(180deg, #ffe2a8, #aa7b42);
+}
+
+.station-action-cooling {
+  background: linear-gradient(180deg, #e9fbff, #6e8f98);
+}
+
+.dish-plate,
+.dish-pan {
   width: min(12rem, 72vw);
   aspect-ratio: 1.45;
   display: grid;
   place-items: center;
+}
+
+.dish-plate {
   background:
     radial-gradient(ellipse at center, #fffdf7 0 44%, #e7d2b4 45% 58%, #9f7246 59% 61%, transparent 62%),
     #f6ead7;
@@ -273,6 +568,30 @@ body {
 
 .dish-plate-oval {
   border-radius: 50% / 42%;
+}
+
+.dish-pan {
+  width: min(12rem, 72vw);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 34%),
+    #6f7880;
+  border: 0.45rem solid #4d565d;
+  box-shadow:
+    inset 0 0.45rem 0 rgba(255, 255, 255, 0.18),
+    0 0.35rem 0 rgba(48, 36, 28, 0.24);
+}
+
+.dish-pan-round {
+  border-radius: 999px;
+}
+
+.dish-pan-loaf {
+  border-radius: 16px;
+}
+
+.dish-pan-sheet {
+  border-radius: 8px;
+  aspect-ratio: 1.7;
 }
 
 .dish-base {
@@ -304,6 +623,23 @@ body {
   box-shadow: inset 0 0.4rem 0 rgba(255, 255, 255, 0.18);
 }
 
+.dish-stage-raw .dish-layer {
+  height: 30%;
+  border-radius: 999px;
+  background: #ead2a8 !important;
+}
+
+.dish-stage-baked .dish-layer {
+  background: #c68642 !important;
+}
+
+.dish-stage-burned .dish-layer {
+  background: #332216 !important;
+  box-shadow:
+    inset 0 0.4rem 0 rgba(255, 255, 255, 0.08),
+    0 0 0 0.15rem #21150f;
+}
+
 .dish-frosting,
 .dish-topping,
 .dish-garnish {
@@ -329,6 +665,11 @@ body {
   border-radius: 999px;
 }
 
+.dish-stage-burned .dish-topping,
+.dish-stage-burned .dish-frosting {
+  filter: grayscale(0.75) brightness(0.55);
+}
+
 .dish-garnish {
   top: 0;
   right: 18%;
@@ -344,6 +685,10 @@ body {
     flex-wrap: wrap;
     justify-content: center;
     width: calc(100vw - 1rem);
+  }
+
+  .mixer-layout {
+    grid-template-columns: 1fr;
   }
 }
 

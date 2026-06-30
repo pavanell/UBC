@@ -7,18 +7,23 @@ export function showIngredientPicker(
   onAdd: (item: MeasuredIngredient) => void,
   recentIds: string[],
   favoriteIds: string[],
+  allowedCategories?: string[],
+  title = 'Ingredient Pantry',
 ): void {
   let query = '';
-  let category = '';
+  let category = allowedCategories?.[0] ?? '';
 
   const render = () => {
-    const results = searchIngredients(query, category || undefined).slice(0, 30);
+    const categories = allowedCategories ?? [...INGREDIENT_CATEGORIES];
+    const results = searchIngredients(query, category || undefined)
+      .filter((ingredient) => !allowedCategories || allowedCategories.includes(ingredient.category))
+      .slice(0, 30);
     const recent = recentIds.map((id) => INGREDIENTS.find((i) => i.id === id)).filter(Boolean);
     showOverlay(`
-      <h2>Ingredient Pantry</h2>
+      <h2>${title}</h2>
       <input id="ing-search" type="search" placeholder="Search ingredients..." value="${query}" />
       <select id="ing-category"><option value="">All categories</option>
-        ${INGREDIENT_CATEGORIES.map((c) => `<option value="${c}" ${category === c ? 'selected' : ''}>${c}</option>`).join('')}
+        ${categories.map((c) => `<option value="${c}" ${category === c ? 'selected' : ''}>${c}</option>`).join('')}
       </select>
       ${recent.length ? `<p class="hint">Recent: ${recent.map((r) => r!.name).join(', ')}</p>` : ''}
       ${favoriteIds.length ? `<p class="hint">Favorites: ${favoriteIds.map((id) => INGREDIENTS.find((i) => i.id === id)?.name).filter(Boolean).join(', ')}</p>` : ''}

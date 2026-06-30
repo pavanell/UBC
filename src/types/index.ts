@@ -117,6 +117,8 @@ export type UnknownDishClass = 'known' | 'dubious' | 'inedible';
 export interface DishAppearance {
   plateShape: string;
   baseShape: string;
+  bakeStage?: 'raw' | 'baked' | 'burned';
+  panShape?: 'round' | 'loaf' | 'sheet';
   crust?: string;
   filling?: string;
   frosting?: string;
