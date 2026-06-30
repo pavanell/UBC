@@ -4,8 +4,13 @@ import type { CharacterAppearance } from '../types';
 export function generatePlaceholderTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 });
 
-  g.fillStyle(0xc4956a, 1);
+  g.fillStyle(0xdab98b, 1);
   g.fillRect(0, 0, 32, 32);
+  g.lineStyle(1, 0xc99f6c, 1);
+  g.strokeRect(0, 0, 32, 32);
+  g.fillStyle(0xe4c99f, 1);
+  g.fillRect(1, 1, 14, 14);
+  g.fillRect(17, 17, 14, 14);
   g.generateTexture('floor', 32, 32);
   g.clear();
 
@@ -16,22 +21,38 @@ export function generatePlaceholderTextures(scene: Phaser.Scene): void {
   g.generateTexture('wall', 32, 32);
   g.clear();
 
-  g.fillStyle(0xd4a574, 1);
+  g.fillStyle(0xf1ddbd, 1);
   g.fillRoundedRect(0, 0, 48, 24, 4);
+  g.fillStyle(0xb96a3a, 1);
+  g.fillRect(4, 15, 40, 5);
+  g.fillStyle(0x7d8f78, 1);
+  g.fillCircle(12, 8, 4);
+  g.fillCircle(24, 8, 4);
+  g.fillCircle(36, 8, 4);
+  g.lineStyle(2, 0x8a5b35);
+  g.strokeRoundedRect(0, 0, 48, 24, 4);
   g.generateTexture('station', 48, 24);
   g.clear();
 
-  g.fillStyle(0x6b4226, 1);
-  g.fillRect(8, 0, 16, 12);
+  g.fillStyle(0x5b3b2a, 1);
+  g.fillRoundedRect(8, 0, 16, 12, 3);
   g.fillStyle(0xf5c99a, 1);
-  g.fillRect(10, 12, 12, 14);
+  g.fillRoundedRect(10, 10, 12, 12, 3);
   g.fillStyle(0xc45c26, 1);
-  g.fillRect(8, 22, 16, 10);
+  g.fillRoundedRect(8, 21, 16, 10, 2);
+  g.fillStyle(0xfff8dc, 1);
+  g.fillRect(14, 21, 4, 10);
   g.generateTexture('player', 32, 32);
   g.clear();
 
-  g.fillStyle(0x5b7c99, 1);
-  g.fillRect(0, 0, 28, 36);
+  g.fillStyle(0x425f7b, 1);
+  g.fillRoundedRect(0, 0, 28, 36, 3);
+  g.fillStyle(0x6f9abd, 1);
+  g.fillRect(4, 4, 20, 10);
+  g.fillStyle(0xffd36b, 1);
+  g.fillCircle(22, 20, 2);
+  g.lineStyle(2, 0x26384b);
+  g.strokeRoundedRect(0, 0, 28, 36, 3);
   g.generateTexture('door', 28, 36);
   g.clear();
 

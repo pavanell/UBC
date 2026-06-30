@@ -126,10 +126,20 @@ export interface DishAppearance {
   layers: number;
 }
 
+export interface DishBowl {
+  id: string;
+  name: string;
+  ingredients: MeasuredIngredient[];
+  techniques: CookingTechnique[];
+  states: FoodState[];
+}
+
 export interface Dish {
   id: string;
   name: string;
   ingredients: MeasuredIngredient[];
+  bowls: DishBowl[];
+  activeBowlId: string;
   techniques: CookingTechnique[];
   states: FoodState[];
   ovenTempF?: number;

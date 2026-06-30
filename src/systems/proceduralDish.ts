@@ -1,4 +1,4 @@
-import type { Dish, DishAppearance, MeasuredIngredient } from '../types';
+import type { Dish, DishAppearance, DishBowl, MeasuredIngredient } from '../types';
 
 const PLATES = ['round', 'square', 'oval'];
 const BASES = ['cake', 'bread', 'cookie', 'pie', 'tart', 'cupcake'];
@@ -26,15 +26,28 @@ export function generateProceduralAppearance(
 }
 
 export function createEmptyDish(name = 'Untitled Dish'): Dish {
+  const bowl = createBowl(1);
   return {
     id: `dish_${Date.now()}`,
     name,
     ingredients: [],
+    bowls: [bowl],
+    activeBowlId: bowl.id,
     techniques: [],
     states: [],
     appearance: generateProceduralAppearance([], name),
     unknownClass: 'dubious',
     submitted: false,
+  };
+}
+
+export function createBowl(index: number): DishBowl {
+  return {
+    id: `bowl_${Date.now()}_${index}`,
+    name: `Bowl ${index}`,
+    ingredients: [],
+    techniques: [],
+    states: [],
   };
 }
 

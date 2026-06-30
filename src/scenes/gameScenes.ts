@@ -28,12 +28,16 @@ export class HomeRoomScene extends Phaser.Scene {
   private target: Phaser.Math.Vector2 | null = null;
   private doors: Phaser.GameObjects.Container[] = [];
   private ratingText!: Phaser.GameObjects.Text;
+  private modeTransitioning = false;
 
   constructor() {
     super('HomeRoomScene');
   }
 
   create(): void {
+    this.doors = [];
+    this.target = null;
+    this.modeTransitioning = false;
     this.drawRoom();
     const profile = sessionStore.getProfile();
 
@@ -92,8 +96,13 @@ export class HomeRoomScene extends Phaser.Scene {
       if (pointer.y > 80 && pointer.y < 650) this.target = new Phaser.Math.Vector2(pointer.x, pointer.y);
     });
 
-    this.game.events.on('refresh-home', () => {
+    const refreshHome = () => {
       this.ratingText.setText(getRatingDisplay(sessionStore.getProfile()));
+    };
+    this.game.events.off('refresh-home');
+    this.game.events.on('refresh-home', refreshHome);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.off('refresh-home', refreshHome);
     });
   }
 
@@ -123,7 +132,8 @@ export class HomeRoomScene extends Phaser.Scene {
 
     for (const door of this.doors) {
       const bounds = door.getBounds();
-      if (Phaser.Geom.Rectangle.Contains(bounds, this.player.x, this.player.y)) {
+      if (!this.modeTransitioning && Phaser.Geom.Rectangle.Contains(bounds, this.player.x, this.player.y)) {
+        this.modeTransitioning = true;
         const id = door.getData('doorId') as string;
         this.game.events.emit('enter-mode', id);
         this.target = null;
@@ -161,6 +171,8 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.stationSprites = [];
+    this.target = null;
     this.drawKitchen();
     const profile = sessionStore.getProfile();
     this.remainingSeconds = 180;
@@ -185,6 +197,7 @@ export class KitchenScene extends Phaser.Scene {
     };
 
     import('../data/kitchenLayout').then(({ KITCHEN_STATIONS }) => {
+      if (!this.scene.isActive(this.scene.key)) return;
       for (const station of KITCHEN_STATIONS) {
         const c = this.add.container(station.x + station.width / 2, station.y + station.height / 2);
         const img = this.add.image(0, 0, 'station');
@@ -223,10 +236,10 @@ export class KitchenScene extends Phaser.Scene {
       if (!hitStation) this.target = new Phaser.Math.Vector2(worldX, worldY);
     });
 
-    this.game.events.on('kitchen-pause', (v: boolean) => {
+    const setKitchenPaused = (v: boolean) => {
       this.paused = v;
-    });
-    this.game.events.on('kitchen-hands-up', () => {
+    };
+    const markHandsUp = () => {
       this.handsUp = true;
       this.player.setVelocity(0, 0);
       this.add
@@ -237,6 +250,14 @@ export class KitchenScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       this.game.events.emit('hands-up');
+    };
+    this.game.events.off('kitchen-pause');
+    this.game.events.off('kitchen-hands-up');
+    this.game.events.on('kitchen-pause', setKitchenPaused);
+    this.game.events.on('kitchen-hands-up', markHandsUp);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.off('kitchen-pause', setKitchenPaused);
+      this.game.events.off('kitchen-hands-up', markHandsUp);
     });
   }
 
